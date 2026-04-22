@@ -1,0 +1,7 @@
+streamlit
+pymongo
+certifi
+google-genai
+gTTS
+requests
+audio-recorder-streamlit
