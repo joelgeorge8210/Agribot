@@ -8,19 +8,21 @@ import os
 import time
 import requests
 from audio_recorder_streamlit import audio_recorder
+import io
 
 # --- 1. SETUP & CONFIGURATION ---
 st.set_page_config(page_title="AgriBot 2.0", page_icon="🌱", layout="centered")
 
 @st.cache_resource
 def init_db():
-    # REPLACE 'yourpassword' with your actual database password
+    # REPLACE 'yourpassword' with your actual database password if needed
     MONGO_URI = "mongodb+srv://Joel123:Joshua1976@joelgeorge.trbt1u2.mongodb.net/?retryWrites=true&w=majority&appName=JoelGeorge"
     client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     return client["agribot_pure_data_db"]
 
 db = init_db()
 
+# SECURE API KEY LOAD (Reads from Streamlit Secrets)
 api_key = os.environ.get("GEMINI_API_KEY", "")
 client_ai = genai.Client(api_key=api_key)
 
@@ -179,7 +181,6 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
     contents = []
 
-    # THE AUDIO FIX: Pass raw bytes directly!
     if raw_audio_data:
         contents.append(types.Part.from_bytes(data=raw_audio_data, mime_type='audio/wav'))
 
@@ -232,15 +233,22 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
         st.session_state.suggestions = suggestions[:3]
 
-        audio_path = f"reply_{len(st.session_state.chat_history)}.mp3"
-        tts = gTTS(text=kannada_part, lang='kn')
-        tts.save(audio_path)
+        # --- THE AUDIO FIX: IN-MEMORY BYTES INSTEAD OF FILES ---
+        reply_audio_bytes = None
+        try:
+            tts = gTTS(text=kannada_part, lang='kn')
+            audio_fp = io.BytesIO()
+            tts.write_to_fp(audio_fp)
+            audio_fp.seek(0)
+            reply_audio_bytes = audio_fp.read()
+        except Exception as e:
+            st.error(f"Audio generation failed: {e}")
 
         st.session_state.chat_history.append({
             "role": "assistant",
             "kannada": kannada_part,
             "english": english_part,
-            "audio": audio_path
+            "audio_bytes": reply_audio_bytes
         })
 
         return True
@@ -272,8 +280,11 @@ def dashboard_page():
             else:
                 with st.chat_message("assistant", avatar="🌱"):
                     st.write(f"**{msg['kannada']}**")
-                    if msg.get("audio") and os.path.exists(msg["audio"]):
-                        st.audio(msg["audio"], format="audio/mp3")
+                    
+                    # --- THE AUDIO FIX: PLAYING IN-MEMORY BYTES ---
+                    if msg.get("audio_bytes"):
+                        st.audio(msg["audio_bytes"], format="audio/mp3")
+                        
                     st.success(f"🌐 Translation: *{msg['english']}*")
 
     if st.session_state.suggestions:
