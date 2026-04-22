@@ -21,7 +21,7 @@ def init_db():
 
 db = init_db()
 
-api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyDl_TbYKJl58Jd5ztIbiN8DrcGXXKie5cw")
+api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyAVUMVL5PQfdn4j994iMCs5ZeBdDKz2KVI")
 client_ai = genai.Client(api_key=api_key)
 
 # --- 2. SESSION STATE MANAGEMENT ---
