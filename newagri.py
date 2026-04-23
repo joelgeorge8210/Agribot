@@ -15,7 +15,7 @@ st.set_page_config(page_title="AgriBot 2.0", page_icon="🌱", layout="centered"
 
 @st.cache_resource
 def init_db():
-    # REPLACE 'yourpassword' with your actual database password if needed
+    # REPLACE 'yourpassword' with your actual database password!
     MONGO_URI = "mongodb+srv://Joel123:Joshua1976@joelgeorge.trbt1u2.mongodb.net/?retryWrites=true&w=majority&appName=JoelGeorge"
     client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     return client["agribot_pure_data_db"]
@@ -194,8 +194,9 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
     for attempt in range(max_retries):
         try:
+            # --- THIS IS THE MAGIC FIX (Changed 2.5 to 1.5) ---
             response = client_ai.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-1.5-flash',
                 contents=contents
             )
             break
