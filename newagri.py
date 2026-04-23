@@ -194,9 +194,9 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
     for attempt in range(max_retries):
         try:
-            # --- THIS IS THE MAGIC FIX (Changed 2.5 to 1.5) ---
+            # --- THIS IS THE MAGIC FIX (Switched to flash-lite) ---
             response = client_ai.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.5-flash-lite',
                 contents=contents
             )
             break
