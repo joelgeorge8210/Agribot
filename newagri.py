@@ -184,8 +184,18 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
     if raw_audio_data:
         contents.append(types.Part.from_bytes(data=raw_audio_data, mime_type='audio/wav'))
 
+    # --- THE HEIC IMAGE FIX ---
     if uploaded_image:
-        contents.append(types.Part.from_bytes(data=uploaded_image.read(), mime_type='image/jpeg'))
+        image_mime_type = 'image/jpeg' # Default
+        filename = uploaded_image.name.lower()
+        if filename.endswith('.png'):
+            image_mime_type = 'image/png'
+        elif filename.endswith(('.heic', '.heif')):
+            image_mime_type = 'image/heic'
+        elif filename.endswith('.webp'):
+            image_mime_type = 'image/webp'
+            
+        contents.append(types.Part.from_bytes(data=uploaded_image.read(), mime_type=image_mime_type))
 
     contents.append(prompt_instructions)
 
@@ -194,7 +204,6 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
     for attempt in range(max_retries):
         try:
-            # --- THIS IS THE MAGIC FIX (Switched to flash-lite) ---
             response = client_ai.models.generate_content(
                 model='gemini-2.5-flash-lite',
                 contents=contents
@@ -234,7 +243,6 @@ def process_agribot_query(text_query=None, uploaded_image=None, raw_audio_data=N
 
         st.session_state.suggestions = suggestions[:3]
 
-        # --- THE AUDIO FIX: IN-MEMORY BYTES INSTEAD OF FILES ---
         reply_audio_bytes = None
         try:
             tts = gTTS(text=kannada_part, lang='kn')
@@ -282,7 +290,6 @@ def dashboard_page():
                 with st.chat_message("assistant", avatar="🌱"):
                     st.write(f"**{msg['kannada']}**")
                     
-                    # --- THE AUDIO FIX: PLAYING IN-MEMORY BYTES ---
                     if msg.get("audio_bytes"):
                         st.audio(msg["audio_bytes"], format="audio/mp3")
                         
@@ -312,7 +319,8 @@ def dashboard_page():
             st.success("✅ Audio recorded! Ready to analyze.")
 
     with col4:
-        uploaded_image = st.file_uploader("📷 Upload Image", type=["jpg", "jpeg", "png"])
+        # --- THE HEIC UPLOADER FIX ---
+        uploaded_image = st.file_uploader("📷 Upload Image", type=["jpg", "jpeg", "png", "heic", "heif", "webp"])
         
     with col5:
         st.write("")
